@@ -1,0 +1,21 @@
+{
+	"appId": "com.nutrisaarthi.app",
+	"appName": "NutriSaarthi",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 3000,
+			"launchAutoHide": true,
+			"backgroundColor": "#ffffff",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": true,
+			"splashFullScreen": true,
+			"splashImmersive": true
+		}
+	},
+	"linuxAndroidStudioPath": "/usr/local/android-studio/bin/studio.sh"
+}
