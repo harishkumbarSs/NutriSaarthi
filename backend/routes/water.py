@@ -1,9 +1,3 @@
-from fastapi import APIRouter"""
-
-Water Intake Tracking Routes
-
-router = APIRouter()"""
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from bson import ObjectId
 from datetime import datetime, date, timedelta
