@@ -58,6 +58,7 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require('./routes/auth.routes');
 const mealRoutes = require('./routes/meal.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const recommendationRoutes = require('./routes/recommendation.routes');
 
 // Health check endpoint - useful for monitoring
 app.get('/api/health', (req, res) => {
@@ -73,6 +74,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/meals', mealRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // ============================================
 // ERROR HANDLING
