@@ -153,25 +153,19 @@ userSchema.index({ email: 1 }); // 1 = ascending order
  * - bcrypt is a one-way hash - can't be reversed
  * - Each hash includes a "salt" making rainbow table attacks useless
  */
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   // Only hash if password was modified (or is new)
   // This prevents re-hashing already hashed passwords
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
-  try {
-    // Generate salt (random data added to password)
-    // 12 is the "cost factor" - higher = more secure but slower
-    const salt = await bcrypt.genSalt(12);
-    
-    // Hash the password with the salt
-    this.password = await bcrypt.hash(this.password, salt);
-    
-    next();
-  } catch (error) {
-    next(error);
-  }
+  // Generate salt (random data added to password)
+  // 12 is the "cost factor" - higher = more secure but slower
+  const salt = await bcrypt.genSalt(12);
+  
+  // Hash the password with the salt
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // ============================================
