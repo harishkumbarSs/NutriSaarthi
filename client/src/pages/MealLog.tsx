@@ -21,12 +21,13 @@ import {
 } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { motion, AnimatePresence } from 'framer-motion'
-import { mealApi, foodApi } from '../services/api'
-import { Meal, MealType, MealFormData } from '../types'
+import { mealApi } from '../services/api'
+import { Meal, MealType, MealFormData, FoodItem } from '../types'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { MealItemSkeleton } from '../components/ui/Skeleton'
+import FoodSearchInput from '../components/ui/FoodSearchInput'
 
 // Meal Type Badge Component
 const MealTypeBadge = ({ type }: { type: MealType }) => {
@@ -203,6 +204,7 @@ const AddMealModal = ({
     nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)
 
   useEffect(() => {
     if (editMeal) {
@@ -213,12 +215,14 @@ const AddMealModal = ({
         nutrition: editMeal.nutrition,
         notes: editMeal.notes,
       })
+      setSelectedFood(null)
     } else {
       setFormData({
         name: '',
         mealType: 'breakfast',
         nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
       })
+      setSelectedFood(null)
     }
   }, [editMeal, isOpen])
 
@@ -233,6 +237,26 @@ const AddMealModal = ({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Handle food selection from search
+  const handleFoodSelect = (food: FoodItem) => {
+    setSelectedFood(food)
+    setFormData({
+      ...formData,
+      name: food.name,
+      nutrition: {
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        fiber: food.fiber,
+      },
+      servingSize: {
+        amount: food.servingSize,
+        unit: food.servingUnit as MealFormData['servingSize'] extends { unit: infer U } ? U : 'g',
+      },
+    })
   }
 
   return (
@@ -252,18 +276,53 @@ const AddMealModal = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Meal Name */}
+          {/* Food Search */}
           <div>
-            <label className="label">Meal Name</label>
-            <input
-              type="text"
+            <label className="label">Search Food</label>
+            <FoodSearchInput
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input-field"
-              placeholder="e.g., Grilled Chicken Salad"
-              required
+              onChange={(name) => setFormData({ ...formData, name })}
+              onFoodSelect={handleFoodSelect}
+              placeholder="Type to search foods..."
+              disabled={!!editMeal}
             />
+            {!editMeal && (
+              <p className="text-xs text-gray-500 mt-1.5">
+                Search our database or type a custom food name
+              </p>
+            )}
           </div>
+
+          {/* Selected Food Info */}
+          {selectedFood && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 p-3 bg-primary-500/10 border border-primary-500/30 rounded-xl"
+            >
+              <UtensilsCrossed className="w-5 h-5 text-primary-400" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{selectedFood.name}</p>
+                <p className="text-xs text-gray-400">
+                  {selectedFood.brand} • {selectedFood.servingSize} {selectedFood.servingUnit}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFood(null)
+                  setFormData({
+                    ...formData,
+                    name: '',
+                    nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                  })
+                }}
+                className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </motion.div>
+          )}
 
           {/* Meal Type */}
           <div>

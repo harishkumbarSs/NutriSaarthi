@@ -203,3 +203,24 @@ export interface RegisterData {
   password: string
 }
 
+// ============================================
+// FOOD DATABASE TYPES
+// ============================================
+
+export interface FoodItem {
+  id: string
+  name: string
+  brand: string
+  servingSize: number
+  servingUnit: string
+  servingWeight: number
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  fiber?: number
+  sodium?: number
+  category: string
+  source: 'local' | 'usda'
+}
+
