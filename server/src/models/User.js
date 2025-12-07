@@ -152,6 +152,10 @@ userSchema.index({ email: 1 }); // 1 = ascending order
  * - If database is breached, hackers can't see real passwords
  * - bcrypt is a one-way hash - can't be reversed
  * - Each hash includes a "salt" making rainbow table attacks useless
+ * 
+ * Note: In Mongoose 8+, async middleware should NOT use next() callback.
+ * Instead, return a promise (implicit with async) or throw an error.
+ * Errors thrown will be caught by Mongoose and passed to error handlers.
  */
 userSchema.pre('save', async function () {
   // Only hash if password was modified (or is new)
@@ -160,12 +164,18 @@ userSchema.pre('save', async function () {
     return;
   }
 
-  // Generate salt (random data added to password)
-  // 12 is the "cost factor" - higher = more secure but slower
-  const salt = await bcrypt.genSalt(12);
-  
-  // Hash the password with the salt
-  this.password = await bcrypt.hash(this.password, salt);
+  try {
+    // Generate salt (random data added to password)
+    // 12 is the "cost factor" - higher = more secure but slower
+    const salt = await bcrypt.genSalt(12);
+    
+    // Hash the password with the salt
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    // Explicitly throw error for security-critical operations
+    // This ensures password hashing failures are properly handled
+    throw new Error(`Password hashing failed: ${error.message}`);
+  }
 });
 
 // ============================================
@@ -256,4 +266,3 @@ userSchema.virtual('bmi').get(function () {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
-
