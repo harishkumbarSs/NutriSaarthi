@@ -2,27 +2,13 @@
  * User Model
  * ==========
  * Defines the structure of a user in our database.
- * 
- * What is a Mongoose Schema?
- * - It's like a blueprint for our data
- * - Defines what fields a user can have
- * - Validates data before saving to database
  */
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-/**
- * User Schema Definition
- * Each field has:
- * - type: What kind of data (String, Number, etc.)
- * - required: Must this field have a value?
- * - unique: Can only one user have this value?
- * - default: What value if none provided?
- */
 const userSchema = new mongoose.Schema(
   {
-    // Basic Info
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -50,13 +36,11 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
-    // Profile Information
     avatar: {
       type: String,
       default: null,
     },
 
-    // Health & Nutrition Goals
     profile: {
       age: {
         type: Number,
@@ -89,7 +73,6 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // Daily Nutrition Targets
     dailyTargets: {
       calories: { type: Number, default: 2000 },
       protein: { type: Number, default: 50 },
@@ -99,7 +82,6 @@ const userSchema = new mongoose.Schema(
       water: { type: Number, default: 8 },
     },
 
-    // Dietary Preferences
     preferences: {
       dietType: {
         type: String,
@@ -110,7 +92,6 @@ const userSchema = new mongoose.Schema(
       dislikedFoods: [{ type: String, trim: true }],
     },
 
-    // Account Status
     isActive: {
       type: Boolean,
       default: true,
@@ -127,40 +108,24 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// ============================================
-// MIDDLEWARE (Pre/Post Hooks)
-// ============================================
-
 /**
  * Pre-save hook: Hash password before saving
  * 
+ * Security: Try-catch ensures bcrypt failures are properly handled.
  * In Mongoose 8+, async middleware should NOT use next() callback.
- * Instead, return a promise or throw an error.
- * 
- * Security: Try-catch ensures bcrypt failures are properly handled
- * and don't result in unhandled promise rejections.
  */
 userSchema.pre('save', async function () {
-  // Only hash if password was modified (or is new)
   if (!this.isModified('password')) {
     return;
   }
 
   try {
-    // Generate salt with cost factor of 12
     const salt = await bcrypt.genSalt(12);
-    
-    // Hash the password with the salt
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
-    // Explicitly throw for security-critical operations
     throw new Error(`Password hashing failed: ${error.message}`);
   }
 });
-
-// ============================================
-// INSTANCE METHODS
-// ============================================
 
 /**
  * Compare entered password with hashed password
@@ -170,17 +135,14 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 /**
- * Calculate BMI (Body Mass Index)
+ * Calculate BMI
  */
 userSchema.methods.calculateBMI = function () {
   if (!this.profile.weight || !this.profile.height) {
     return null;
   }
-  
   const heightInMeters = this.profile.height / 100;
-  const bmi = this.profile.weight / (heightInMeters * heightInMeters);
-  
-  return Math.round(bmi * 10) / 10;
+  return Math.round((this.profile.weight / (heightInMeters * heightInMeters)) * 10) / 10;
 };
 
 /**
@@ -218,19 +180,13 @@ userSchema.methods.calculateDailyCalories = function () {
   };
 
   tdee += goalAdjustments[goal] || 0;
-
   return Math.round(tdee);
 };
-
-// ============================================
-// VIRTUAL FIELDS
-// ============================================
 
 userSchema.virtual('bmi').get(function () {
   return this.calculateBMI();
 });
 
-// Create and export the model
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
