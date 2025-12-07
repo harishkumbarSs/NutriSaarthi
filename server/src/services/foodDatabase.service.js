@@ -203,7 +203,7 @@ const COMMON_FOODS = [
     name: 'Egg (Boiled)',
     brand: 'Fresh',
     servingSize: 1,
-    servingUnit: 'large',
+    servingUnit: 'piece',
     servingWeight: 50,
     calories: 78,
     protein: 6,
@@ -217,8 +217,8 @@ const COMMON_FOODS = [
     id: 'local_14',
     name: 'Milk (Full Cream)',
     brand: 'Amul',
-    servingSize: 1,
-    servingUnit: 'glass',
+    servingSize: 244,
+    servingUnit: 'ml',
     servingWeight: 244,
     calories: 146,
     protein: 8,
@@ -246,6 +246,52 @@ const COMMON_FOODS = [
 ];
 
 /**
+ * Normalize serving unit to valid enum values
+ * Maps various units to our accepted values: 'g', 'ml', 'oz', 'cup', 'tbsp', 'tsp', 'piece', 'serving'
+ */
+const normalizeServingUnit = (unit) => {
+  if (!unit) return 'serving';
+  
+  const unitLower = unit.toLowerCase().trim();
+  
+  // Direct matches
+  if (['g', 'ml', 'oz', 'cup', 'tbsp', 'tsp', 'piece', 'serving'].includes(unitLower)) {
+    return unitLower;
+  }
+  
+  // Common mappings
+  const unitMap = {
+    'gram': 'g',
+    'grams': 'g',
+    'grm': 'g',
+    'milliliter': 'ml',
+    'milliliters': 'ml',
+    'mlt': 'ml',
+    'ounce': 'oz',
+    'ounces': 'oz',
+    'tablespoon': 'tbsp',
+    'tablespoons': 'tbsp',
+    'teaspoon': 'tsp',
+    'teaspoons': 'tsp',
+    'cups': 'cup',
+    'pieces': 'piece',
+    'pcs': 'piece',
+    'large': 'piece',
+    'medium': 'piece',
+    'small': 'piece',
+    'each': 'piece',
+    'slice': 'piece',
+    'slices': 'piece',
+    'glass': 'ml',
+    'bowl': 'serving',
+    'portion': 'serving',
+    'servings': 'serving',
+  };
+  
+  return unitMap[unitLower] || 'serving';
+};
+
+/**
  * Transform USDA food data to our format
  */
 const transformUSDAFood = (food) => {
@@ -263,7 +309,7 @@ const transformUSDAFood = (food) => {
     name: food.description,
     brand: food.brandOwner || food.brandName || 'Generic',
     servingSize: food.servingSize || 100,
-    servingUnit: food.servingSizeUnit || 'g',
+    servingUnit: normalizeServingUnit(food.servingSizeUnit),
     servingWeight: food.servingSize || 100,
     calories: Math.round(getNutrient('energy')),
     protein: Math.round(getNutrient('protein') * 10) / 10,
