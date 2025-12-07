@@ -15,6 +15,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
+const { initRedis } = require('./config/redis');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { mongoSanitize, xssSanitize } = require('./middleware/sanitize');
 const hpp = require('hpp');
@@ -139,6 +140,9 @@ const startServer = async () => {
   try {
     // Connect to MongoDB first
     await connectDB();
+    
+    // Initialize Redis cache (optional, continues without it)
+    initRedis();
     
     // Then start listening for requests
     app.listen(PORT, () => {

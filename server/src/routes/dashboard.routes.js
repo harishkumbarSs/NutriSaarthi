@@ -2,14 +2,7 @@
  * Dashboard Routes
  * ================
  * Analytics and summary endpoints for the dashboard.
- * 
- * Route Structure:
- * - GET /api/dashboard           - Complete dashboard data (optimized)
- * - GET /api/dashboard/today     - Today's nutrition summary
- * - GET /api/dashboard/trends    - Calorie trends over time
- * - GET /api/dashboard/macros    - Macro nutrient breakdown
- * - GET /api/dashboard/meal-distribution - Meal type distribution
- * - GET /api/dashboard/weekly-overview   - Weekly summary
+ * Includes Redis caching for performance optimization.
  */
 
 const express = require('express');
@@ -29,6 +22,7 @@ const {
 // Import middleware
 const { protect } = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 
 // ============================================
 // VALIDATION RULES
@@ -60,6 +54,22 @@ const distributionValidation = [
 ];
 
 // ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+// Cache dashboard data for 2 minutes
+const dashboardCache = cacheMiddleware({
+  ttl: 120,
+  userSpecific: true,
+});
+
+// Cache trends for 5 minutes (less frequently updated)
+const trendsCache = cacheMiddleware({
+  ttl: 300,
+  userSpecific: true,
+});
+
+// ============================================
 // ROUTES
 // ============================================
 
@@ -67,14 +77,13 @@ const distributionValidation = [
 router.use(protect);
 
 // Main dashboard endpoint (optimized single call)
-router.get('/', getDashboardData);
+router.get('/', dashboardCache, getDashboardData);
 
 // Individual analytics endpoints
-router.get('/today', getTodaySummary);
-router.get('/trends', trendsValidation, validate, getCalorieTrends);
-router.get('/macros', macrosValidation, validate, getMacroBreakdown);
-router.get('/meal-distribution', distributionValidation, validate, getMealDistribution);
-router.get('/weekly-overview', getWeeklyOverview);
+router.get('/today', dashboardCache, getTodaySummary);
+router.get('/trends', trendsCache, trendsValidation, validate, getCalorieTrends);
+router.get('/macros', dashboardCache, macrosValidation, validate, getMacroBreakdown);
+router.get('/meal-distribution', trendsCache, distributionValidation, validate, getMealDistribution);
+router.get('/weekly-overview', trendsCache, getWeeklyOverview);
 
 module.exports = router;
-
