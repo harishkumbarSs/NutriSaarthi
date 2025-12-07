@@ -363,6 +363,7 @@ const AddMealModal = ({
                   placeholder="0"
                   required
                   min="0"
+                  step="1"
                 />
               </div>
               <div>
@@ -377,6 +378,7 @@ const AddMealModal = ({
                   className="input-field mt-1"
                   placeholder="0"
                   min="0"
+                  step="0.1"
                 />
               </div>
               <div>
@@ -391,6 +393,7 @@ const AddMealModal = ({
                   className="input-field mt-1"
                   placeholder="0"
                   min="0"
+                  step="0.1"
                 />
               </div>
               <div>
@@ -405,6 +408,7 @@ const AddMealModal = ({
                   className="input-field mt-1"
                   placeholder="0"
                   min="0"
+                  step="0.1"
                 />
               </div>
             </div>
