@@ -98,8 +98,7 @@ const VirtualizedMealList = ({
     <div className="glass-card overflow-hidden">
       <div
         ref={parentRef}
-        className="max-h-[600px] overflow-auto"
-        style={{ contain: 'strict' }}
+        className="min-h-[200px] max-h-[600px] overflow-auto"
       >
         <div
           style={{
