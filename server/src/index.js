@@ -57,6 +57,7 @@ app.use(express.urlencoded({ extended: true }));
 // Import route files
 const authRoutes = require('./routes/auth.routes');
 const mealRoutes = require('./routes/meal.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 // Health check endpoint - useful for monitoring
 app.get('/api/health', (req, res) => {
@@ -71,6 +72,7 @@ app.get('/api/health', (req, res) => {
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/meals', mealRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // ============================================
 // ERROR HANDLING
