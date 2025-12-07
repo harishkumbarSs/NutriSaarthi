@@ -379,7 +379,7 @@ export const foodApi = {
     totalResults: number
     sources: string[]
   }>> => {
-    const response = await api.get('/foods/search', { params: { query, limit } })
+    const response = await api.get('/foods/search', { params: { q: query, limit } })
     return response.data
   },
 
