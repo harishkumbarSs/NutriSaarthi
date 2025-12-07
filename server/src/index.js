@@ -16,6 +16,8 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
 const { generalLimiter } = require('./middleware/rateLimiter');
+const { mongoSanitize, xssSanitize } = require('./middleware/sanitize');
+const hpp = require('hpp');
 
 // Initialize Express application
 // Express is like a toolbox that helps us build web servers easily
@@ -55,6 +57,18 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie Parser: Parses cookies from request headers
 // Used for refresh token handling
 app.use(cookieParser());
+
+// Security: Prevent NoSQL injection attacks
+// Removes MongoDB operators ($gt, $ne, etc.) from user input
+app.use(mongoSanitize());
+
+// Security: Prevent XSS attacks
+// Sanitizes user input to remove HTML/script tags
+app.use(xssSanitize({ excludeFields: ['password'] }));
+
+// Security: Prevent HTTP Parameter Pollution
+// Cleans up duplicate parameters in query strings
+app.use(hpp());
 
 // Rate Limiter: Prevents API abuse
 // 100 requests per 15 minutes per IP
