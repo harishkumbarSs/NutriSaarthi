@@ -26,17 +26,14 @@ const generalLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable X-RateLimit-* headers
   
-  // Skip rate limiting for certain conditions (e.g., whitelisted IPs)
+  // Skip rate limiting for certain conditions
   skip: (req) => {
     // Skip for health check endpoint
     if (req.path === '/api/health') return true;
     return false;
   },
-  
-  // Custom key generator (default uses IP)
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  },
+  // Uses default keyGenerator which handles IPv6 properly
+  validate: { xForwardedForHeader: false },
 });
 
 /**
