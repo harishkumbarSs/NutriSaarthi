@@ -98,6 +98,17 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+
+    // Refresh token for secure token rotation
+    refreshToken: {
+      type: String,
+      select: false,
+    },
+    
+    refreshTokenExpiry: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,

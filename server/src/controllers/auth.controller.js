@@ -1,19 +1,20 @@
 /**
  * Authentication Controller
  * =========================
- * Handles user registration, login, and profile operations.
- * 
- * Controller = The "brain" that handles business logic
- * - Receives request from route
- * - Processes data (validation, database operations)
- * - Sends response back to client
+ * Handles user registration, login, token refresh, and profile operations.
  */
 
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const { sendSuccess } = require('../utils/response');
-const { generateToken } = require('../middleware/auth');
+const { 
+  generateToken, 
+  generateTokens, 
+  verifyRefreshToken, 
+  clearRefreshToken,
+  REFRESH_TOKEN_EXPIRY_DAYS 
+} = require('../middleware/auth');
 
 /**
  * @desc    Register a new user
@@ -23,25 +24,29 @@ const { generateToken } = require('../middleware/auth');
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
-  // Check if user already exists
   const existingUser = await User.findOne({ email: email.toLowerCase() });
   
   if (existingUser) {
     throw ApiError.conflict('An account with this email already exists');
   }
 
-  // Create new user
-  // Password will be hashed automatically by pre-save hook
   const user = await User.create({
     name,
     email: email.toLowerCase(),
     password,
   });
 
-  // Generate JWT token
-  const token = generateToken(user._id);
+  // Generate both access and refresh tokens
+  const { accessToken, refreshToken } = await generateTokens(user._id);
 
-  // Send response (exclude password)
+  // Set refresh token in httpOnly cookie
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  });
+
   sendSuccess(res, 201, 'Registration successful! Welcome to NutriSaarthi.', {
     user: {
       id: user._id,
@@ -52,7 +57,7 @@ const register = asyncHandler(async (req, res) => {
       preferences: user.preferences,
       createdAt: user.createdAt,
     },
-    token,
+    token: accessToken,
   });
 });
 
@@ -64,38 +69,40 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Validate input
   if (!email || !password) {
     throw ApiError.badRequest('Please provide email and password');
   }
 
-  // Find user by email (include password for comparison)
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
   if (!user) {
     throw ApiError.unauthorized('Invalid email or password');
   }
 
-  // Check if account is active
   if (!user.isActive) {
     throw ApiError.unauthorized('Your account has been deactivated');
   }
 
-  // Verify password
   const isPasswordValid = await user.comparePassword(password);
 
   if (!isPasswordValid) {
     throw ApiError.unauthorized('Invalid email or password');
   }
 
-  // Update last login time
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
-  // Generate token
-  const token = generateToken(user._id);
+  // Generate both access and refresh tokens
+  const { accessToken, refreshToken } = await generateTokens(user._id);
 
-  // Send response
+  // Set refresh token in httpOnly cookie
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  });
+
   sendSuccess(res, 200, 'Login successful!', {
     user: {
       id: user._id,
@@ -107,17 +114,74 @@ const login = asyncHandler(async (req, res) => {
       preferences: user.preferences,
       lastLogin: user.lastLogin,
     },
-    token,
+    token: accessToken,
   });
+});
+
+/**
+ * @desc    Refresh access token
+ * @route   POST /api/auth/refresh
+ * @access  Public (with valid refresh token)
+ */
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  // Get refresh token from cookie or body
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+  const userId = req.body.userId;
+
+  if (!refreshToken || !userId) {
+    throw ApiError.unauthorized('Refresh token and user ID required');
+  }
+
+  // Verify refresh token
+  const user = await verifyRefreshToken(userId, refreshToken);
+
+  if (!user) {
+    throw ApiError.unauthorized('Invalid or expired refresh token. Please log in again.');
+  }
+
+  if (!user.isActive) {
+    throw ApiError.unauthorized('Account has been deactivated');
+  }
+
+  // Generate new tokens (token rotation for security)
+  const { accessToken, refreshToken: newRefreshToken } = await generateTokens(user._id);
+
+  // Set new refresh token in httpOnly cookie
+  res.cookie('refreshToken', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  });
+
+  sendSuccess(res, 200, 'Token refreshed successfully', {
+    token: accessToken,
+    refreshToken: newRefreshToken,
+  });
+});
+
+/**
+ * @desc    Logout user (invalidate refresh token)
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+const logout = asyncHandler(async (req, res) => {
+  await clearRefreshToken(req.user._id);
+
+  res.cookie('refreshToken', '', {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+
+  sendSuccess(res, 200, 'Logged out successfully');
 });
 
 /**
  * @desc    Get current user profile
  * @route   GET /api/auth/me
- * @access  Private (requires login)
+ * @access  Private
  */
 const getMe = asyncHandler(async (req, res) => {
-  // req.user is set by auth middleware
   const user = await User.findById(req.user._id);
 
   sendSuccess(res, 200, 'Profile retrieved successfully', {
@@ -144,7 +208,6 @@ const getMe = asyncHandler(async (req, res) => {
 const updateProfile = asyncHandler(async (req, res) => {
   const { name, avatar, profile, preferences } = req.body;
 
-  // Fields that can be updated
   const updates = {};
 
   if (name) updates.name = name;
@@ -152,28 +215,18 @@ const updateProfile = asyncHandler(async (req, res) => {
   if (profile) updates.profile = { ...req.user.profile.toObject(), ...profile };
   if (preferences) updates.preferences = { ...req.user.preferences.toObject(), ...preferences };
 
-  // Update user
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $set: updates },
     { new: true, runValidators: true }
   );
 
-  // Recalculate daily calories if profile was updated
   if (profile) {
     const calculatedCalories = user.calculateDailyCalories();
-    
-    // Update daily targets with calculated values
     user.dailyTargets.calories = calculatedCalories;
-    
-    // Calculate macros based on standard ratios
-    // Protein: 20% of calories, 4 cal/gram
-    // Carbs: 50% of calories, 4 cal/gram
-    // Fat: 30% of calories, 9 cal/gram
     user.dailyTargets.protein = Math.round((calculatedCalories * 0.20) / 4);
     user.dailyTargets.carbs = Math.round((calculatedCalories * 0.50) / 4);
     user.dailyTargets.fat = Math.round((calculatedCalories * 0.30) / 9);
-    
     await user.save();
   }
 
@@ -234,32 +287,36 @@ const changePassword = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('New password must be at least 6 characters');
   }
 
-  // Get user with password
   const user = await User.findById(req.user._id).select('+password');
-
-  // Verify current password
   const isValid = await user.comparePassword(currentPassword);
   
   if (!isValid) {
     throw ApiError.unauthorized('Current password is incorrect');
   }
 
-  // Update password (will be hashed by pre-save hook)
   user.password = newPassword;
   await user.save();
 
-  // Generate new token (invalidates old one)
-  const token = generateToken(user._id);
+  // Generate new tokens after password change
+  const { accessToken, refreshToken } = await generateTokens(user._id);
 
-  sendSuccess(res, 200, 'Password changed successfully', { token });
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  });
+
+  sendSuccess(res, 200, 'Password changed successfully', { token: accessToken });
 });
 
 module.exports = {
   register,
   login,
+  refreshAccessToken,
+  logout,
   getMe,
   updateProfile,
   updateTargets,
   changePassword,
 };
-

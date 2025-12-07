@@ -1,20 +1,18 @@
 /**
  * Authentication Middleware
  * =========================
- * Protects routes that require a logged-in user.
- * 
- * How JWT Authentication Works:
- * 1. User logs in with email/password
- * 2. Server validates and returns a JWT token
- * 3. Client stores token (localStorage/cookies)
- * 4. Client sends token with each request in Authorization header
- * 5. This middleware verifies the token and attaches user to request
+ * Protects routes and handles JWT + Refresh Token authentication.
  */
 
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
+
+// Token expiration times
+const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
+const REFRESH_TOKEN_EXPIRY_DAYS = 7; // Long-lived refresh token
 
 /**
  * Protect routes - User must be logged in
@@ -23,26 +21,18 @@ const protect = asyncHandler(async (req, res, next) => {
   let token;
 
   // Check for token in Authorization header
-  // Format: "Bearer <token>"
   const authHeader = req.headers.authorization;
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    // Extract token (remove "Bearer " prefix)
     token = authHeader.split(' ')[1];
   }
 
-  // If no token found, user is not authenticated
   if (!token) {
     throw ApiError.unauthorized('Access denied. Please log in.');
   }
 
   try {
-    // Verify the token
-    // jwt.verify will throw an error if token is invalid or expired
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Find user by ID from token payload
-    // Select password field explicitly since we excluded it in schema
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user) {
@@ -53,25 +43,21 @@ const protect = asyncHandler(async (req, res, next) => {
       throw ApiError.unauthorized('Account has been deactivated');
     }
 
-    // Attach user to request object for use in route handlers
     req.user = user;
-    
     next();
   } catch (error) {
-    // Handle specific JWT errors
     if (error.name === 'JsonWebTokenError') {
       throw ApiError.unauthorized('Invalid token');
     }
     if (error.name === 'TokenExpiredError') {
-      throw ApiError.unauthorized('Token has expired. Please log in again.');
+      throw ApiError.unauthorized('Token has expired. Please refresh your token.');
     }
     throw error;
   }
 });
 
 /**
- * Optional authentication - Get user if logged in, but don't require it
- * Useful for routes that behave differently for logged-in users
+ * Optional authentication
  */
 const optionalAuth = asyncHandler(async (req, res, next) => {
   let token;
@@ -90,9 +76,8 @@ const optionalAuth = asyncHandler(async (req, res, next) => {
       if (user && user.isActive) {
         req.user = user;
       }
-    } catch (error) {
-      // Token invalid, but that's okay for optional auth
-      // Just continue without setting req.user
+    } catch {
+      // Token invalid, continue without user
     }
   }
 
@@ -100,15 +85,93 @@ const optionalAuth = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * Generate JWT token for a user
- * @param {string} userId - The user's MongoDB _id
- * @returns {string} - Signed JWT token
+ * Generate short-lived access token
  */
+const generateAccessToken = (userId) => {
+  return jwt.sign(
+    { userId, type: 'access' },
+    process.env.JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
+  );
+};
+
+/**
+ * Generate long-lived refresh token
+ * Uses crypto for secure random generation
+ */
+const generateRefreshToken = () => {
+  return crypto.randomBytes(40).toString('hex');
+};
+
+/**
+ * Save refresh token to user
+ */
+const saveRefreshToken = async (userId, refreshToken) => {
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
+  
+  await User.findByIdAndUpdate(userId, {
+    refreshToken: crypto.createHash('sha256').update(refreshToken).digest('hex'),
+    refreshTokenExpiry: expiry,
+  });
+};
+
+/**
+ * Verify refresh token
+ */
+const verifyRefreshToken = async (userId, refreshToken) => {
+  const user = await User.findById(userId).select('+refreshToken +refreshTokenExpiry');
+  
+  if (!user || !user.refreshToken) {
+    return null;
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+  
+  if (user.refreshToken !== hashedToken) {
+    return null;
+  }
+
+  if (user.refreshTokenExpiry < new Date()) {
+    // Token expired, clear it
+    await User.findByIdAndUpdate(userId, {
+      refreshToken: null,
+      refreshTokenExpiry: null,
+    });
+    return null;
+  }
+
+  return user;
+};
+
+/**
+ * Clear refresh token (logout)
+ */
+const clearRefreshToken = async (userId) => {
+  await User.findByIdAndUpdate(userId, {
+    refreshToken: null,
+    refreshTokenExpiry: null,
+  });
+};
+
+/**
+ * Generate both tokens (for login/register)
+ */
+const generateTokens = async (userId) => {
+  const accessToken = generateAccessToken(userId);
+  const refreshToken = generateRefreshToken();
+  
+  await saveRefreshToken(userId, refreshToken);
+  
+  return { accessToken, refreshToken };
+};
+
+// Legacy support - generate simple token
 const generateToken = (userId) => {
   return jwt.sign(
-    { userId }, // Payload - data stored in token
-    process.env.JWT_SECRET, // Secret key to sign the token
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } // Token expiration
+    { userId },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
 
@@ -116,5 +179,12 @@ module.exports = {
   protect,
   optionalAuth,
   generateToken,
+  generateAccessToken,
+  generateRefreshToken,
+  generateTokens,
+  saveRefreshToken,
+  verifyRefreshToken,
+  clearRefreshToken,
+  ACCESS_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY_DAYS,
 };
-

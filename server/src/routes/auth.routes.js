@@ -6,6 +6,8 @@
  * Route Structure:
  * - POST   /api/auth/register  - Create new account
  * - POST   /api/auth/login     - Login to account
+ * - POST   /api/auth/refresh   - Refresh access token
+ * - POST   /api/auth/logout    - Logout (invalidate refresh token)
  * - GET    /api/auth/me        - Get current user profile
  * - PUT    /api/auth/profile   - Update profile
  * - PUT    /api/auth/targets   - Update nutrition targets
@@ -20,6 +22,8 @@ const router = express.Router();
 const {
   register,
   login,
+  refreshAccessToken,
+  logout,
   getMe,
   updateProfile,
   updateTargets,
@@ -33,7 +37,6 @@ const validate = require('../middleware/validate');
 // ============================================
 // VALIDATION RULES
 // ============================================
-// express-validator helps us validate and sanitize input
 
 const registerValidation = [
   body('name')
@@ -61,6 +64,12 @@ const loginValidation = [
   
   body('password')
     .notEmpty().withMessage('Password is required'),
+];
+
+const refreshValidation = [
+  body('userId')
+    .notEmpty().withMessage('User ID is required')
+    .isMongoId().withMessage('Invalid user ID'),
 ];
 
 const profileValidation = [
@@ -131,12 +140,13 @@ const passwordValidation = [
 // Public routes (no login required)
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
+router.post('/refresh', refreshValidation, validate, refreshAccessToken);
 
 // Protected routes (login required)
+router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, profileValidation, validate, updateProfile);
 router.put('/targets', protect, targetsValidation, validate, updateTargets);
 router.put('/password', protect, passwordValidation, validate, changePassword);
 
 module.exports = router;
-

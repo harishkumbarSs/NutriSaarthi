@@ -13,6 +13,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
 
 // Initialize Express application
@@ -49,6 +50,10 @@ app.use(express.json({ limit: '10mb' }));
 
 // URL Encoded Parser: Handles form submissions
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie Parser: Parses cookies from request headers
+// Used for refresh token handling
+app.use(cookieParser());
 
 // ============================================
 // API ROUTES
