@@ -2,9 +2,10 @@
  * Meal Log Page
  * =============
  * View and manage meal entries with add/edit functionality.
+ * Uses virtualization for efficient rendering of large lists.
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { 
   Plus, 
   Calendar, 
@@ -15,13 +16,17 @@ import {
   Heart,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Search
 } from 'lucide-react'
-import { mealApi } from '../services/api'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { motion, AnimatePresence } from 'framer-motion'
+import { mealApi, foodApi } from '../services/api'
 import { Meal, MealType, MealFormData } from '../types'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+import { MealItemSkeleton } from '../components/ui/Skeleton'
 
 // Meal Type Badge Component
 const MealTypeBadge = ({ type }: { type: MealType }) => {
@@ -36,6 +41,147 @@ const MealTypeBadge = ({ type }: { type: MealType }) => {
     <span className={clsx('px-2 py-1 rounded-lg text-xs font-medium capitalize', styles[type])}>
       {type}
     </span>
+  )
+}
+
+// Virtualized Meal List Component for performance
+const VirtualizedMealList = ({
+  meals,
+  isLoading,
+  onEdit,
+  onDelete,
+  onToggleFavorite,
+  onAddFirst,
+}: {
+  meals: Meal[]
+  isLoading: boolean
+  onEdit: (meal: Meal) => void
+  onDelete: (id: string) => void
+  onToggleFavorite: (id: string) => void
+  onAddFirst: () => void
+}) => {
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  // Virtual list configuration
+  const virtualizer = useVirtualizer({
+    count: meals.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100, // Estimated row height
+    overscan: 5, // Render 5 extra items outside viewport
+  })
+
+  if (isLoading) {
+    return (
+      <div className="glass-card overflow-hidden p-4 space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <MealItemSkeleton key={i} />
+        ))}
+      </div>
+    )
+  }
+
+  if (meals.length === 0) {
+    return (
+      <div className="glass-card text-center py-16">
+        <UtensilsCrossed className="w-16 h-16 mx-auto text-gray-700 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-400 mb-2">No meals found</h3>
+        <p className="text-gray-500 mb-6">Start tracking your nutrition journey!</p>
+        <button onClick={onAddFirst} className="btn-primary">
+          Add your first meal
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="glass-card overflow-hidden">
+      <div
+        ref={parentRef}
+        className="max-h-[600px] overflow-auto"
+        style={{ contain: 'strict' }}
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          <AnimatePresence mode="popLayout">
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const meal = meals[virtualRow.index]
+              return (
+                <motion.div
+                  key={meal._id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className="border-b border-gray-800 last:border-b-0"
+                >
+                  <div className="p-4 sm:p-6 hover:bg-gray-800/30 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center shrink-0">
+                          <UtensilsCrossed className="w-6 h-6 text-primary-400" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-white">{meal.name}</h3>
+                            <MealTypeBadge type={meal.mealType} />
+                          </div>
+                          <p className="text-sm text-gray-400 mt-1">
+                            {format(new Date(meal.consumedAt), 'h:mm a')}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span className="text-primary-400">{meal.nutrition.calories} kcal</span>
+                            <span className="text-gray-500">P: {meal.nutrition.protein}g</span>
+                            <span className="text-gray-500">C: {meal.nutrition.carbs}g</span>
+                            <span className="text-gray-500">F: {meal.nutrition.fat}g</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onToggleFavorite(meal._id)}
+                          className={clsx(
+                            'p-2 rounded-lg transition-colors',
+                            meal.isFavorite
+                              ? 'text-red-400 bg-red-500/10'
+                              : 'text-gray-500 hover:text-red-400 hover:bg-red-500/10'
+                          )}
+                        >
+                          <Heart size={18} fill={meal.isFavorite ? 'currentColor' : 'none'} />
+                        </button>
+                        <button
+                          onClick={() => onEdit(meal)}
+                          className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                        <button
+                          onClick={() => onDelete(meal._id)}
+                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -394,114 +540,38 @@ const MealLog = () => {
         </div>
       </div>
 
-      {/* Meals List */}
-      <div className="glass-card overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : meals.length === 0 ? (
-          <div className="text-center py-16">
-            <UtensilsCrossed className="w-16 h-16 mx-auto text-gray-700 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">No meals found</h3>
-            <p className="text-gray-500 mb-6">Start tracking your nutrition journey!</p>
-            <button 
-              onClick={() => { setEditingMeal(null); setIsModalOpen(true); }}
-              className="btn-primary"
-            >
-              Add your first meal
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-800">
-            {meals.map((meal) => (
-              <div 
-                key={meal._id}
-                className="p-4 sm:p-6 hover:bg-gray-800/30 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center shrink-0">
-                      <UtensilsCrossed className="w-6 h-6 text-primary-400" />
-                    </div>
-                    
-                    {/* Content */}
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-white">{meal.name}</h3>
-                        <MealTypeBadge type={meal.mealType} />
-                      </div>
-                      
-                      <p className="text-sm text-gray-400 mt-1">
-                        {format(new Date(meal.consumedAt), 'h:mm a')}
-                      </p>
-                      
-                      {/* Nutrition Quick View */}
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        <span className="text-primary-400">{meal.nutrition.calories} kcal</span>
-                        <span className="text-gray-500">P: {meal.nutrition.protein}g</span>
-                        <span className="text-gray-500">C: {meal.nutrition.carbs}g</span>
-                        <span className="text-gray-500">F: {meal.nutrition.fat}g</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleToggleFavorite(meal._id)}
-                      className={clsx(
-                        'p-2 rounded-lg transition-colors',
-                        meal.isFavorite 
-                          ? 'text-red-400 bg-red-500/10' 
-                          : 'text-gray-500 hover:text-red-400 hover:bg-red-500/10'
-                      )}
-                    >
-                      <Heart size={18} fill={meal.isFavorite ? 'currentColor' : 'none'} />
-                    </button>
-                    <button
-                      onClick={() => { setEditingMeal(meal); setIsModalOpen(true); }}
-                      className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      <Edit3 size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMeal(meal._id)}
-                      className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Meals List with Virtualization */}
+      <VirtualizedMealList
+        meals={meals}
+        isLoading={isLoading}
+        onEdit={(meal) => { setEditingMeal(meal); setIsModalOpen(true); }}
+        onDelete={handleDeleteMeal}
+        onToggleFavorite={handleToggleFavorite}
+        onAddFirst={() => { setEditingMeal(null); setIsModalOpen(true); }}
+      />
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-800">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="btn-ghost disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-gray-400">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="btn-ghost disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Pagination */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 p-4 glass-card">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="btn-ghost disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-gray-400">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="btn-ghost disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       <AddMealModal

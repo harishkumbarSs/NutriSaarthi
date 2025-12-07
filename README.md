@@ -1,298 +1,258 @@
 # 🥗 NutriSaarthi
 
-**Your Intelligent Nutrition Companion**
+> Your AI-Powered Nutrition Partner
 
-A full-stack MERN application designed to help users track their nutrition, log meals, and receive AI-powered dietary recommendations based on their health goals.
+NutriSaarthi is a full-stack MERN application for tracking nutrition, planning meals, and achieving health goals with personalized AI recommendations.
 
-![NutriSaarthi](https://img.shields.io/badge/NutriSaarthi-Nutrition%20Tracking-22c55e?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIvPjwvc3ZnPg==)
-![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-
----
-
-## 🚀 Tech Stack
-
-### Frontend (`/client`)
-| Technology | Purpose |
-|------------|---------|
-| **React 18** | UI Library with TypeScript |
-| **Vite** | Next-gen build tool |
-| **React Router 6** | Client-side routing |
-| **Zustand** | Lightweight state management |
-| **Tailwind CSS** | Utility-first styling |
-| **Recharts** | Data visualization |
-| **Axios** | HTTP client |
-| **Lucide React** | Beautiful icons |
-
-### Backend (`/server`)
-| Technology | Purpose |
-|------------|---------|
-| **Node.js** | Runtime environment |
-| **Express.js** | Web framework |
-| **MongoDB** | NoSQL database |
-| **Mongoose** | ODM for MongoDB |
-| **JWT** | Authentication |
-| **bcrypt** | Password hashing |
-| **Express Validator** | Input validation |
-
----
+![License](https://img.shields.io/badge/license-MIT-green)
+![Node](https://img.shields.io/badge/node-20.x-brightgreen)
+![React](https://img.shields.io/badge/react-18.x-blue)
+![MongoDB](https://img.shields.io/badge/mongodb-7.x-green)
 
 ## ✨ Features
 
-### 🔐 Authentication
-- Secure user registration and login
-- JWT-based authentication with token persistence
-- Protected routes and API endpoints
+### Core Features
+- 🔐 **Secure Authentication** - JWT with refresh tokens, rate limiting
+- 🍽️ **Meal Tracking** - Log meals with full nutrition data
+- 💧 **Water Intake** - Track daily hydration with visual progress
+- 📅 **Meal Planning** - Plan weekly meals with calendar view
+- 📊 **Progress Tracking** - Weight trends, calorie analytics, streak tracking
+- 🤖 **AI Recommendations** - Personalized nutrition suggestions
 
-### 📊 Dashboard
-- Real-time calorie and macro tracking
-- Interactive weekly charts
-- Progress indicators for daily goals
-- AI-powered nutrition recommendations
+### Technical Features
+- 🎨 **Dark/Light Theme** - Beautiful UI with theme toggle
+- 📱 **PWA Support** - Install as mobile app, offline support
+- ⚡ **Performance Optimized** - Virtualized lists, API caching
+- 🔒 **Security Hardened** - Rate limiting, input sanitization, helmet
+- 🧪 **Tested** - Jest (backend) + Vitest (frontend)
+- 🐳 **Docker Ready** - Production-ready containers
 
-### 🍽️ Meal Logging
-- CRUD operations for meals
-- Meal type categorization (breakfast, lunch, dinner, snack)
-- Nutritional information tracking
-- Favorite meals for quick re-logging
-- Date filtering and pagination
+## 🛠️ Tech Stack
 
-### 👤 Profile Management
-- Personal information management
-- Custom daily targets setting
-- Activity level and goal configuration
-- Auto-calculated calorie recommendations
+### Frontend
+- React 18 + TypeScript
+- Vite (build tool)
+- Tailwind CSS
+- Zustand (state management)
+- React Router v6
+- Framer Motion (animations)
+- Recharts (data visualization)
+- TanStack Virtual (virtualization)
 
-### 🤖 AI Recommendations
-- Rule-based nutrition insights
-- Personalized meal suggestions
-- Weekly habit analysis
-- Goal-based recommendations
+### Backend
+- Node.js + Express.js
+- MongoDB + Mongoose
+- JWT Authentication
+- Redis (caching)
+- Express Rate Limit
+- Express Validator
 
----
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 20+
+- MongoDB 7+
+- Redis (optional)
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/nutrisaarthi.git
+cd nutrisaarthi
+```
+
+2. **Install dependencies**
+```bash
+# Backend
+cd server
+npm install
+
+# Frontend
+cd ../client
+npm install
+```
+
+3. **Configure environment**
+```bash
+# Server
+cp server/.env.example server/.env
+# Edit server/.env with your values
+
+# Client
+cp client/.env.example client/.env
+```
+
+4. **Start development servers**
+```bash
+# Terminal 1: Backend
+cd server
+npm run dev
+
+# Terminal 2: Frontend
+cd client
+npm run dev
+```
+
+5. **Open browser**
+```
+http://localhost:5173
+```
 
 ## 📁 Project Structure
 
 ```
 nutrisaarthi/
-├── client/                    # React Frontend
-│   ├── public/               # Static assets
+├── client/                 # React Frontend
 │   ├── src/
-│   │   ├── components/       # Reusable components
-│   │   │   └── layout/       # Layout components
-│   │   ├── pages/            # Route pages
-│   │   ├── stores/           # Zustand stores
-│   │   ├── services/         # API services
-│   │   ├── types/            # TypeScript definitions
-│   │   ├── App.tsx           # Main app with routing
-│   │   ├── main.tsx          # Entry point
-│   │   └── index.css         # Global styles
-│   ├── package.json
-│   └── vite.config.ts
+│   │   ├── components/     # Reusable components
+│   │   ├── pages/          # Page components
+│   │   ├── stores/         # Zustand stores
+│   │   ├── services/       # API services
+│   │   ├── types/          # TypeScript types
+│   │   └── __tests__/      # Frontend tests
+│   ├── public/             # Static assets
+│   └── vite.config.ts      # Vite configuration
 │
-├── server/                    # Express Backend
+├── server/                 # Express Backend
 │   ├── src/
-│   │   ├── config/           # Database config
-│   │   ├── controllers/      # Route handlers
-│   │   ├── middleware/       # Express middleware
-│   │   ├── models/           # Mongoose schemas
-│   │   ├── routes/           # API routes
-│   │   ├── services/         # Business logic
-│   │   ├── utils/            # Helper functions
-│   │   └── index.js          # Entry point
-│   ├── .env.example
-│   └── package.json
+│   │   ├── config/         # Database & Redis config
+│   │   ├── controllers/    # Route handlers
+│   │   ├── middleware/     # Express middleware
+│   │   ├── models/         # Mongoose models
+│   │   ├── routes/         # API routes
+│   │   ├── services/       # Business logic
+│   │   └── utils/          # Utility functions
+│   └── tests/              # Backend tests
 │
-├── .gitignore
-└── README.md
+├── .github/
+│   └── workflows/          # CI/CD pipelines
+│
+├── Dockerfile              # Production Docker build
+├── docker-compose.yml      # Production compose
+├── docker-compose.dev.yml  # Development compose
+└── nginx.conf              # Nginx configuration
 ```
 
----
+## 🔧 Configuration
 
-## 🛠️ Getting Started
+### Environment Variables
 
-### Prerequisites
-- **Node.js** v18 or higher
-- **MongoDB** (local installation or MongoDB Atlas)
-- **npm** or **yarn**
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/nutrisaarthi.git
-   cd nutrisaarthi
-   ```
-
-2. **Setup Backend**
-   ```bash
-   cd server
-   npm install
-   
-   # Create environment file
-   cp .env.example .env
-   
-   # Edit .env with your configuration
-   # - MONGODB_URI: Your MongoDB connection string
-   # - JWT_SECRET: A secure random string
-   
-   # Start the server
-   npm run dev
-   ```
-
-3. **Setup Frontend** (in a new terminal)
-   ```bash
-   cd client
-   npm install
-   
-   # Start the development server
-   npm run dev
-   ```
-
-4. **Access the application**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:5000
-   - Health Check: http://localhost:5000/api/health
-
----
-
-## 🔧 Environment Variables
-
-### Backend (`server/.env`)
+#### Server (.env)
 ```env
-# Server Configuration
-PORT=5000
 NODE_ENV=development
-
-# MongoDB Connection
+PORT=5000
 MONGODB_URI=mongodb://localhost:27017/nutrisaarthi
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_SECRET=your-super-secret-key
 JWT_EXPIRES_IN=7d
-
-# Client URL (for CORS)
+REDIS_URL=redis://localhost:6379
 CLIENT_URL=http://localhost:5173
+USDA_API_KEY=your-usda-api-key
 ```
 
----
+#### Client (.env)
+```env
+VITE_API_URL=/api
+```
 
-## 📡 API Endpoints
+## 🐳 Docker Deployment
+
+### Development
+```bash
+# Start MongoDB and Redis
+docker-compose -f docker-compose.dev.yml up -d
+
+# Access Mongo Express at http://localhost:8081
+```
+
+### Production
+```bash
+# Build and start all services
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f api
+```
+
+## 🧪 Testing
+
+### Backend Tests (Jest)
+```bash
+cd server
+npm test              # Run tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+### Frontend Tests (Vitest)
+```bash
+cd client
+npm test              # Watch mode
+npm run test:run      # Single run
+npm run test:coverage # Coverage report
+```
+
+## 📱 PWA Installation
+
+NutriSaarthi is a Progressive Web App! You can install it on your device:
+
+1. Open the app in Chrome/Edge
+2. Click the install icon in the address bar
+3. Enjoy the native-like experience!
+
+## 🔐 API Endpoints
 
 ### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/auth/register` | Register new user |
 | POST | `/api/auth/login` | Login user |
+| POST | `/api/auth/refresh` | Refresh token |
+| POST | `/api/auth/logout` | Logout user |
 | GET | `/api/auth/me` | Get current user |
-| PUT | `/api/auth/profile` | Update profile |
-| PUT | `/api/auth/targets` | Update daily targets |
-| PUT | `/api/auth/password` | Change password |
 
 ### Meals
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/meals` | Get all meals (paginated) |
-| POST | `/api/meals` | Create new meal |
-| GET | `/api/meals/:id` | Get meal by ID |
+| GET | `/api/meals` | Get all meals |
+| POST | `/api/meals` | Create meal |
 | PUT | `/api/meals/:id` | Update meal |
 | DELETE | `/api/meals/:id` | Delete meal |
-| PATCH | `/api/meals/:id/favorite` | Toggle favorite |
-| GET | `/api/meals/date/:date` | Get meals by date |
+
+### Water
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/water/today` | Get today's intake |
+| POST | `/api/water` | Log water |
+| DELETE | `/api/water/:id` | Remove entry |
 
 ### Dashboard
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/dashboard` | Get all dashboard data |
-| GET | `/api/dashboard/today` | Today's summary |
-| GET | `/api/dashboard/trends` | Calorie trends |
-| GET | `/api/dashboard/macros` | Macro breakdown |
-| GET | `/api/dashboard/weekly-overview` | Weekly overview |
-
-### Recommendations
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/recommendations` | Get daily recommendations |
-| GET | `/api/recommendations/meals/:type` | Get meal suggestions |
-| GET | `/api/recommendations/insights` | Get weekly insights |
-
----
-
-## 🎨 Screenshots
-
-### Dashboard
-- Calorie progress ring with daily tracking
-- Macro nutrient cards (protein, carbs, fat)
-- Weekly calorie chart
-- AI-powered recommendations panel
-
-### Meal Log
-- Paginated meal list with filters
-- Add/Edit meal modal
-- Date navigation
-- Favorite meals toggle
-
-### Profile
-- Personal information form
-- Daily target customization
-- Goal selection
-
----
-
-## 🧪 Development Scripts
-
-### Backend
-```bash
-npm run dev      # Start with nodemon (hot reload)
-npm start        # Production start
-```
-
-### Frontend
-```bash
-npm run dev      # Start Vite dev server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
-```
-
----
-
-## 📝 Git Commit History
-
-This project follows **conventional commits**:
-
-- `feat:` New features
-- `fix:` Bug fixes
-- `docs:` Documentation
-- `perf:` Performance improvements
-- `refactor:` Code refactoring
-
----
+| GET | `/api/dashboard` | Get dashboard data |
+| GET | `/api/dashboard/trends` | Get trends |
+| GET | `/api/dashboard/progress` | Get progress |
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/amazing`)
 3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+4. Push to the branch (`git push origin feature/amazing`)
 5. Open a Pull Request
-
----
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-
 ## 🙏 Acknowledgments
 
-- Icons by [Lucide](https://lucide.dev/)
-- Charts by [Recharts](https://recharts.org/)
-- UI inspiration from modern nutrition apps
+- [USDA FoodData Central](https://fdc.nal.usda.gov/) for nutrition data
+- [Lucide Icons](https://lucide.dev/) for beautiful icons
+- [Tailwind CSS](https://tailwindcss.com/) for styling
 
 ---
 
 <p align="center">
-  Made with ❤️ for better nutrition tracking
+  Made with ❤️ by the NutriSaarthi Team
 </p>

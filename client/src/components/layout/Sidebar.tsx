@@ -6,7 +6,10 @@ import {
   User, 
   LogOut,
   Sparkles,
-  X
+  X,
+  Droplets,
+  Calendar,
+  TrendingUp
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
@@ -27,6 +30,9 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
   { path: '/meals', label: 'Meal Log', icon: <UtensilsCrossed size={20} /> },
+  { path: '/water', label: 'Water Intake', icon: <Droplets size={20} /> },
+  { path: '/planner', label: 'Meal Planner', icon: <Calendar size={20} /> },
+  { path: '/progress', label: 'Progress', icon: <TrendingUp size={20} /> },
   { path: '/profile', label: 'Profile', icon: <User size={20} /> },
 ]
 

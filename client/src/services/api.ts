@@ -268,5 +268,164 @@ export const recommendationApi = {
   },
 }
 
+// ============================================
+// WATER TRACKING API
+// ============================================
+
+export const waterApi = {
+  getToday: async (): Promise<ApiResponse<{
+    today: {
+      total: number
+      target: number
+      entries: Array<{ _id: string; amount: number; date: string; time: string; createdAt: string }>
+      percentage: number
+    }
+    weekly: Array<{ date: string; amount: number; target: number }>
+    streak: number
+  }>> => {
+    const response = await api.get('/water/today')
+    return response.data
+  },
+
+  add: async (data: { amount: number; time?: string }): Promise<ApiResponse<{ entry: { _id: string; amount: number } }>> => {
+    const response = await api.post('/water', data)
+    return response.data
+  },
+
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await api.delete(`/water/${id}`)
+    return response.data
+  },
+
+  getHistory: async (startDate: string, endDate: string): Promise<ApiResponse<{
+    entries: Array<{ date: string; total: number; target: number }>
+  }>> => {
+    const response = await api.get('/water/history', { params: { startDate, endDate } })
+    return response.data
+  },
+}
+
+// ============================================
+// MEAL PLAN API
+// ============================================
+
+export const mealPlanApi = {
+  getWeek: async (weekStart: string): Promise<ApiResponse<{
+    weekStart: string
+    days: Array<{
+      date: string
+      meals: Array<{
+        _id: string
+        name: string
+        mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+        calories: number
+        protein: number
+        carbs: number
+        fat: number
+        notes?: string
+      }>
+      totalCalories: number
+    }>
+  }>> => {
+    const response = await api.get('/meal-plans/week', { params: { weekStart } })
+    return response.data
+  },
+
+  add: async (data: {
+    date: string
+    mealType: string
+    name: string
+    calories?: number
+    protein?: number
+    carbs?: number
+    fat?: number
+    notes?: string
+  }): Promise<ApiResponse<{ meal: object }>> => {
+    const response = await api.post('/meal-plans', data)
+    return response.data
+  },
+
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await api.delete(`/meal-plans/${id}`)
+    return response.data
+  },
+
+  copyDay: async (fromDate: string, toDate: string): Promise<ApiResponse<{ copied: number }>> => {
+    const response = await api.post('/meal-plans/copy', { fromDate, toDate })
+    return response.data
+  },
+}
+
+// ============================================
+// FOOD DATABASE API
+// ============================================
+
+export const foodApi = {
+  search: async (query: string, limit = 25): Promise<ApiResponse<{
+    foods: Array<{
+      id: string
+      name: string
+      brand: string
+      servingSize: number
+      servingUnit: string
+      calories: number
+      protein: number
+      carbs: number
+      fat: number
+      fiber: number
+      category: string
+      source: string
+    }>
+    totalResults: number
+    sources: string[]
+  }>> => {
+    const response = await api.get('/foods/search', { params: { query, limit } })
+    return response.data
+  },
+
+  getById: async (id: string): Promise<ApiResponse<{ food: object }>> => {
+    const response = await api.get(`/foods/${id}`)
+    return response.data
+  },
+
+  getCategories: async (): Promise<ApiResponse<{ categories: string[] }>> => {
+    const response = await api.get('/foods/categories')
+    return response.data
+  },
+}
+
+// ============================================
+// PROGRESS API EXTENSION
+// ============================================
+
+// Extend dashboardApi for progress tracking
+dashboardApi.getProgress = async (period: string): Promise<ApiResponse<{
+  weight: {
+    current: number
+    start: number
+    change: number
+    history: Array<{ date: string; weight: number }>
+  }
+  calories: {
+    average: number
+    target: number
+    trend: Array<{ date: string; consumed: number; target: number }>
+  }
+  macros: {
+    averageProtein: number
+    averageCarbs: number
+    averageFat: number
+    distribution: Array<{ name: string; value: number }>
+  }
+  streaks: {
+    current: number
+    longest: number
+    goalsReached: number
+  }
+}>> => {
+  const response = await api.get('/dashboard/progress', { params: { period } })
+  return response.data
+}
+
 export default api
 

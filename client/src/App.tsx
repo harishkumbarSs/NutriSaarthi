@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
+import { Toaster } from 'react-hot-toast'
 
 // Layouts
 import MainLayout from './components/layout/MainLayout'
@@ -11,6 +12,9 @@ import MealLog from './pages/MealLog'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import WaterTracking from './pages/WaterTracking'
+import MealPlanner from './pages/MealPlanner'
+import Progress from './pages/Progress'
 
 /**
  * Protected Route Component
@@ -61,7 +65,31 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <Routes>
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#1f2937',
+            color: '#fff',
+            border: '1px solid #374151',
+          },
+          success: {
+            iconTheme: {
+              primary: '#22c55e',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      <Routes>
       {/* Public Routes */}
       <Route element={<AuthLayout />}>
         <Route
@@ -92,6 +120,9 @@ function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/meals" element={<MealLog />} />
+        <Route path="/water" element={<WaterTracking />} />
+        <Route path="/planner" element={<MealPlanner />} />
+        <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
 
@@ -99,6 +130,7 @@ function App() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   )
 }
 

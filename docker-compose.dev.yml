@@ -1,0 +1,62 @@
+# ===========================================
+# NutriSaarthi Development Docker Compose
+# ===========================================
+# Run: docker-compose -f docker-compose.dev.yml up -d
+
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongo:
+    image: mongo:7
+    container_name: nutrisaarthi-mongo-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: nutrisaarthi
+    volumes:
+      - mongo-dev-data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - nutrisaarthi-dev-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: nutrisaarthi-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+    networks:
+      - nutrisaarthi-dev-network
+
+  # Mongo Express (Database Admin UI)
+  mongo-express:
+    image: mongo-express
+    container_name: nutrisaarthi-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongo:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongo
+    networks:
+      - nutrisaarthi-dev-network
+
+volumes:
+  mongo-dev-data:
+  redis-dev-data:
+
+networks:
+  nutrisaarthi-dev-network:
+    driver: bridge
+
