@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables for theming */
+:root {
+  /* Light theme colors */
+  --color-bg-primary: 255 255 255;
+  --color-bg-secondary: 249 250 251;
+  --color-bg-tertiary: 243 244 246;
+  --color-surface: 255 255 255;
+  --color-surface-hover: 249 250 251;
+  
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 75 85 99;
+  --color-text-tertiary: 156 163 175;
+  
+  --color-border: 229 231 235;
+  --color-border-hover: 209 213 219;
+  
+  --color-accent: 16 185 129;
+  --color-accent-light: 209 250 229;
+  
+  --scrollbar-bg: 243 244 246;
+  --scrollbar-thumb: 209 213 219;
+  --scrollbar-thumb-hover: 156 163 175;
+}
+
+.dark {
+  /* Dark theme colors */
+  --color-bg-primary: 3 7 18;
+  --color-bg-secondary: 17 24 39;
+  --color-bg-tertiary: 31 41 55;
+  --color-surface: 17 24 39;
+  --color-surface-hover: 31 41 55;
+  
+  --color-text-primary: 249 250 251;
+  --color-text-secondary: 209 213 219;
+  --color-text-tertiary: 156 163 175;
+  
+  --color-border: 55 65 81;
+  --color-border-hover: 75 85 99;
+  
+  --color-accent: 16 185 129;
+  --color-accent-light: 6 78 59;
+  
+  --scrollbar-bg: 17 24 39;
+  --scrollbar-thumb: 55 65 81;
+  --scrollbar-thumb-hover: 75 85 99;
+}
+
 /* Custom base styles */
 @layer base {
   html {
@@ -9,7 +56,7 @@
   }
   
   body {
-    @apply bg-gray-950 text-gray-100 antialiased;
+    @apply bg-theme-primary text-theme-primary antialiased transition-colors duration-300;
     font-family: 'Inter', system-ui, sans-serif;
   }
 
@@ -20,56 +67,60 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-900;
+    background: rgb(var(--scrollbar-bg));
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-700 rounded-full;
+    background: rgb(var(--scrollbar-thumb));
+    border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-600;
+    background: rgb(var(--scrollbar-thumb-hover));
   }
 }
 
 /* Custom component styles */
 @layer components {
   .glass-card {
-    @apply bg-gray-900/50 backdrop-blur-xl border border-gray-800/50 rounded-2xl;
+    @apply bg-theme-surface/80 backdrop-blur-xl border border-theme-border rounded-2xl 
+           shadow-lg shadow-black/5 dark:shadow-black/20;
   }
 
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-500 text-white font-medium py-2.5 px-5 rounded-xl
            transition-all duration-200 ease-out hover:shadow-lg hover:shadow-primary-500/25
-           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 
+           focus:ring-offset-theme-primary
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-gray-100 font-medium py-2.5 px-5 rounded-xl
-           transition-all duration-200 ease-out border border-gray-700
-           focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900;
+    @apply bg-theme-tertiary hover:bg-theme-surface-hover text-theme-primary font-medium 
+           py-2.5 px-5 rounded-xl transition-all duration-200 ease-out border border-theme-border
+           focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 
+           focus:ring-offset-theme-primary;
   }
 
   .btn-ghost {
-    @apply bg-transparent hover:bg-gray-800/50 text-gray-300 hover:text-white font-medium py-2 px-4 rounded-xl
-           transition-all duration-200 ease-out;
+    @apply bg-transparent hover:bg-theme-surface-hover text-theme-secondary hover:text-theme-primary 
+           font-medium py-2 px-4 rounded-xl transition-all duration-200 ease-out;
   }
 
   .input-field {
-    @apply w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3
-           text-gray-100 placeholder-gray-500
+    @apply w-full bg-theme-surface border border-theme-border rounded-xl px-4 py-3
+           text-theme-primary placeholder-theme-tertiary
            focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
            transition-all duration-200;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-400 mb-2;
+    @apply block text-sm font-medium text-theme-secondary mb-2;
   }
 
   .card-hover {
-    @apply hover:border-gray-700 hover:shadow-xl hover:shadow-black/20 
-           hover:-translate-y-1 transition-all duration-300;
+    @apply hover:border-theme-border-hover hover:shadow-xl hover:shadow-black/10 
+           dark:hover:shadow-black/30 hover:-translate-y-1 transition-all duration-300;
   }
 
   .text-gradient {
@@ -78,11 +129,27 @@
   }
 
   .progress-bar {
-    @apply h-2 bg-gray-800 rounded-full overflow-hidden;
+    @apply h-2 bg-theme-tertiary rounded-full overflow-hidden;
   }
 
   .progress-fill {
     @apply h-full rounded-full transition-all duration-500 ease-out;
+  }
+
+  /* Theme toggle specific */
+  .theme-toggle {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full
+           bg-theme-tertiary transition-colors duration-300
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .theme-toggle-active {
+    @apply bg-primary-600;
+  }
+
+  .theme-toggle-thumb {
+    @apply inline-block h-4 w-4 transform rounded-full bg-white shadow-lg
+           transition-transform duration-300 ease-in-out;
   }
 }
 
@@ -93,5 +160,38 @@
   .animate-delay-300 { animation-delay: 300ms; }
   .animate-delay-400 { animation-delay: 400ms; }
   .animate-delay-500 { animation-delay: 500ms; }
-}
 
+  /* Theme utility classes */
+  .bg-theme-primary {
+    background-color: rgb(var(--color-bg-primary));
+  }
+  .bg-theme-secondary {
+    background-color: rgb(var(--color-bg-secondary));
+  }
+  .bg-theme-tertiary {
+    background-color: rgb(var(--color-bg-tertiary));
+  }
+  .bg-theme-surface {
+    background-color: rgb(var(--color-surface));
+  }
+  .bg-theme-surface-hover {
+    background-color: rgb(var(--color-surface-hover));
+  }
+  
+  .text-theme-primary {
+    color: rgb(var(--color-text-primary));
+  }
+  .text-theme-secondary {
+    color: rgb(var(--color-text-secondary));
+  }
+  .text-theme-tertiary {
+    color: rgb(var(--color-text-tertiary));
+  }
+  
+  .border-theme-border {
+    border-color: rgb(var(--color-border));
+  }
+  .border-theme-border-hover {
+    border-color: rgb(var(--color-border-hover));
+  }
+}
