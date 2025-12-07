@@ -33,6 +33,7 @@ const {
 // Import middleware
 const { protect } = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const { authLimiter, createAccountLimiter } = require('../middleware/rateLimiter');
 
 // ============================================
 // VALIDATION RULES
@@ -138,9 +139,10 @@ const passwordValidation = [
 // ============================================
 
 // Public routes (no login required)
-router.post('/register', registerValidation, validate, register);
-router.post('/login', loginValidation, validate, login);
-router.post('/refresh', refreshValidation, validate, refreshAccessToken);
+// Note: stricter rate limits applied to auth endpoints
+router.post('/register', createAccountLimiter, registerValidation, validate, register);
+router.post('/login', authLimiter, loginValidation, validate, login);
+router.post('/refresh', authLimiter, refreshValidation, validate, refreshAccessToken);
 
 // Protected routes (login required)
 router.post('/logout', protect, logout);

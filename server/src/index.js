@@ -15,6 +15,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
+const { generalLimiter } = require('./middleware/rateLimiter');
 
 // Initialize Express application
 // Express is like a toolbox that helps us build web servers easily
@@ -54,6 +55,10 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie Parser: Parses cookies from request headers
 // Used for refresh token handling
 app.use(cookieParser());
+
+// Rate Limiter: Prevents API abuse
+// 100 requests per 15 minutes per IP
+app.use('/api', generalLimiter);
 
 // ============================================
 // API ROUTES
