@@ -1,7 +1,5 @@
 /**
  * User Model
- * ==========
- * Defines the structure of a user in our database.
  */
 
 const mongoose = require('mongoose');
@@ -110,9 +108,6 @@ const userSchema = new mongoose.Schema(
 
 /**
  * Pre-save hook: Hash password before saving
- * 
- * Security: Try-catch ensures bcrypt failures are properly handled.
- * In Mongoose 8+, async middleware should NOT use next() callback.
  */
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
