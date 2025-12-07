@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Name is required'],
-      trim: true, // Removes whitespace from both ends
+      trim: true,
       minlength: [2, 'Name must be at least 2 characters'],
       maxlength: [50, 'Name cannot exceed 50 characters'],
     },
@@ -34,8 +34,8 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, 'Email is required'],
-      unique: true, // No two users can have same email
-      lowercase: true, // Converts to lowercase before saving
+      unique: true,
+      lowercase: true,
       trim: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false, // Don't include password in queries by default
+      select: false,
     },
 
     // Profile Information
@@ -68,12 +68,12 @@ const userSchema = new mongoose.Schema(
         enum: ['male', 'female', 'other', 'prefer-not-to-say'],
       },
       height: {
-        type: Number, // in cm
+        type: Number,
         min: [50, 'Height must be at least 50 cm'],
         max: [300, 'Height seems unrealistic'],
       },
       weight: {
-        type: Number, // in kg
+        type: Number,
         min: [20, 'Weight must be at least 20 kg'],
         max: [500, 'Weight seems unrealistic'],
       },
@@ -89,14 +89,14 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // Daily Nutrition Targets (calculated or custom)
+    // Daily Nutrition Targets
     dailyTargets: {
       calories: { type: Number, default: 2000 },
-      protein: { type: Number, default: 50 }, // grams
-      carbs: { type: Number, default: 250 }, // grams
-      fat: { type: Number, default: 65 }, // grams
-      fiber: { type: Number, default: 25 }, // grams
-      water: { type: Number, default: 8 }, // glasses
+      protein: { type: Number, default: 50 },
+      carbs: { type: Number, default: 250 },
+      fat: { type: Number, default: 65 },
+      fiber: { type: Number, default: 25 },
+      water: { type: Number, default: 8 },
     },
 
     // Dietary Preferences
@@ -106,14 +106,8 @@ const userSchema = new mongoose.Schema(
         enum: ['none', 'vegetarian', 'vegan', 'keto', 'paleo', 'mediterranean'],
         default: 'none',
       },
-      allergies: [{
-        type: String,
-        trim: true,
-      }],
-      dislikedFoods: [{
-        type: String,
-        trim: true,
-      }],
+      allergies: [{ type: String, trim: true }],
+      dislikedFoods: [{ type: String, trim: true }],
     },
 
     // Account Status
@@ -127,19 +121,11 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    // Schema Options
-    timestamps: true, // Adds createdAt and updatedAt automatically
-    toJSON: { virtuals: true }, // Include virtual fields when converting to JSON
+    timestamps: true,
+    toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
 );
-
-// ============================================
-// INDEXES
-// ============================================
-// Indexes speed up queries - like a book's index helps you find pages faster
-
-userSchema.index({ email: 1 }); // 1 = ascending order
 
 // ============================================
 // MIDDLEWARE (Pre/Post Hooks)
@@ -148,32 +134,26 @@ userSchema.index({ email: 1 }); // 1 = ascending order
 /**
  * Pre-save hook: Hash password before saving
  * 
- * Why hash passwords?
- * - If database is breached, hackers can't see real passwords
- * - bcrypt is a one-way hash - can't be reversed
- * - Each hash includes a "salt" making rainbow table attacks useless
+ * In Mongoose 8+, async middleware should NOT use next() callback.
+ * Instead, return a promise or throw an error.
  * 
- * Note: In Mongoose 8+, async middleware should NOT use next() callback.
- * Instead, return a promise (implicit with async) or throw an error.
- * Errors thrown will be caught by Mongoose and passed to error handlers.
+ * Security: Try-catch ensures bcrypt failures are properly handled
+ * and don't result in unhandled promise rejections.
  */
 userSchema.pre('save', async function () {
   // Only hash if password was modified (or is new)
-  // This prevents re-hashing already hashed passwords
   if (!this.isModified('password')) {
     return;
   }
 
   try {
-    // Generate salt (random data added to password)
-    // 12 is the "cost factor" - higher = more secure but slower
+    // Generate salt with cost factor of 12
     const salt = await bcrypt.genSalt(12);
     
     // Hash the password with the salt
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
-    // Explicitly throw error for security-critical operations
-    // This ensures password hashing failures are properly handled
+    // Explicitly throw for security-critical operations
     throw new Error(`Password hashing failed: ${error.message}`);
   }
 });
@@ -181,21 +161,16 @@ userSchema.pre('save', async function () {
 // ============================================
 // INSTANCE METHODS
 // ============================================
-// Methods available on individual user documents
 
 /**
- * Compare entered password with hashed password in database
- * @param {string} candidatePassword - Password to check
- * @returns {boolean} - True if passwords match
+ * Compare entered password with hashed password
  */
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  // bcrypt.compare handles the hashing and comparison
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 /**
  * Calculate BMI (Body Mass Index)
- * Formula: weight(kg) / height(m)²
  */
 userSchema.methods.calculateBMI = function () {
   if (!this.profile.weight || !this.profile.height) {
@@ -205,21 +180,19 @@ userSchema.methods.calculateBMI = function () {
   const heightInMeters = this.profile.height / 100;
   const bmi = this.profile.weight / (heightInMeters * heightInMeters);
   
-  return Math.round(bmi * 10) / 10; // Round to 1 decimal
+  return Math.round(bmi * 10) / 10;
 };
 
 /**
- * Calculate recommended daily calories based on profile
- * Uses Mifflin-St Jeor Equation (most accurate for most people)
+ * Calculate recommended daily calories (Mifflin-St Jeor Equation)
  */
 userSchema.methods.calculateDailyCalories = function () {
   const { age, gender, height, weight, activityLevel, goal } = this.profile;
   
   if (!age || !gender || !height || !weight) {
-    return this.dailyTargets.calories; // Return default
+    return this.dailyTargets.calories;
   }
 
-  // Base Metabolic Rate (BMR)
   let bmr;
   if (gender === 'male') {
     bmr = 10 * weight + 6.25 * height - 5 * age + 5;
@@ -227,7 +200,6 @@ userSchema.methods.calculateDailyCalories = function () {
     bmr = 10 * weight + 6.25 * height - 5 * age - 161;
   }
 
-  // Activity multipliers
   const activityMultipliers = {
     'sedentary': 1.2,
     'light': 1.375,
@@ -236,12 +208,10 @@ userSchema.methods.calculateDailyCalories = function () {
     'very-active': 1.9,
   };
 
-  // Total Daily Energy Expenditure (TDEE)
   let tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
 
-  // Adjust for goal
   const goalAdjustments = {
-    'lose-weight': -500, // 500 calorie deficit
+    'lose-weight': -500,
     'maintain': 0,
     'gain-weight': 300,
     'build-muscle': 400,
@@ -255,14 +225,12 @@ userSchema.methods.calculateDailyCalories = function () {
 // ============================================
 // VIRTUAL FIELDS
 // ============================================
-// Computed properties that don't get saved to database
 
 userSchema.virtual('bmi').get(function () {
   return this.calculateBMI();
 });
 
 // Create and export the model
-// 'User' becomes 'users' collection in MongoDB (pluralized, lowercase)
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
