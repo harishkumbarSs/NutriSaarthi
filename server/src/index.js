@@ -53,7 +53,9 @@ app.use(express.urlencoded({ extended: true }));
 // ============================================
 // API ROUTES
 // ============================================
-// We'll add these as we build each feature
+
+// Import route files
+const authRoutes = require('./routes/auth.routes');
 
 // Health check endpoint - useful for monitoring
 app.get('/api/health', (req, res) => {
@@ -64,6 +66,9 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV,
   });
 });
+
+// Mount routes
+app.use('/api/auth', authRoutes);
 
 // ============================================
 // ERROR HANDLING
