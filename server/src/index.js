@@ -84,6 +84,7 @@ const mealRoutes = require('./routes/meal.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const recommendationRoutes = require('./routes/recommendation.routes');
 const foodRoutes = require('./routes/food.routes');
+const waterRoutes = require('./routes/water.routes');
 
 // Health check endpoint - useful for monitoring
 app.get('/api/health', (req, res) => {
@@ -101,6 +102,7 @@ app.use('/api/meals', mealRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/foods', foodRoutes);
+app.use('/api/water', waterRoutes);
 
 // ============================================
 // ERROR HANDLING
